@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据上传任务列表 - 客户存储系统</title>
+    <link rel="stylesheet" href="/css/common.css">
+    <style>
+        .select-all-checkbox {
+            margin-right: 5px;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-complete {
+            background: #f6ffed;
+            color: #52c41a;
+            border: 1px solid #b7eb8f;
+        }
+        .status-processing {
+            background: #e6f7ff;
+            color: #1890ff;
+            border: 1px solid #91d5ff;
+        }
+        .status-failed {
+            background: #fff2e8;
+            color: #ff7875;
+            border: 1px solid #ffccc7;
+        }
+        .remarks-editable {
+            cursor: pointer;
+            color: #1890ff;
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+            min-width: 100px;
+        }
+        .remarks-editable:hover {
+            background: #e6f7ff;
+        }
+        .remarks-input {
+            width: 100%;
+            padding: 4px 8px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <div class="top-header">
+        <div class="system-name">客户信息</div>
+        <div class="user-info">
+            <a href="javascript:void(0)">查询前端</a>
+            <span id="userName">登录人:【加载中...】</span>
+            <a href="javascript:void(0)" onclick="logout()">退出</a>
+        </div>
+    </div>
+
+    <!-- 左侧菜单 -->
+    <div class="sidebar">
+        <div class="menu-title">管理菜单</div>
+        <a href="/pages/index.html" class="menu-item">首页</a>
+        <a href="/pages/list.html" class="menu-item">客户列表</a>
+        <a href="/pages/add.html" class="menu-item">添加客户</a>
+        <a href="/pages/edit.html" class="menu-item">编辑客户</a>
+        <a href="/pages/delete.html" class="menu-item">删除客户</a>
+        <a href="/pages/import.html" class="menu-item">导入数据</a>
+        <a href="/pages/upload-tasks.html" class="menu-item active">上传任务管理</a>
+        <a href="/pages/batch-query.html" class="menu-item">批量查询</a>
+    </div>
+
+    <!-- 主内容区域 -->
+    <div class="main-content">
+        <div class="content-header">
+            <h2>数据上传任务列表</h2>
+            
+            <!-- 操作按钮 -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                <div class="action-buttons">
+                    <button onclick="loadTasks()" class="btn btn-primary">刷新</button>
+                    <button onclick="batchDeleteTasks()" class="btn btn-danger" id="batchDeleteBtn" style="display: none;">删除任务</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="message" class="message"></div>
+        
+        <div id="loading" class="loading">正在加载数据...</div>
+        
+        <div class="data-table" id="taskTable" style="display: none;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>
+                            <input type="checkbox" class="checkbox select-all-checkbox" onclick="toggleSelectAll(this)">
+                        </th>
+                        <th>ID</th>
+                        <th>文件名</th>
+                        <th>总数目</th>
+                        <th>添加数目</th>
+                        <th>存在数目</th>
+                        <th>状态</th>
+                        <th>上传时间</th>
+                        <th>完成时间</th>
+                        <th>操作</th>
+                        <th>备注[点击修改]</th>
+                    </tr>
+                </thead>
+                <tbody id="taskTableBody">
+                </tbody>
+            </table>
+            
+            <!-- 分页控件 -->
+            <div style="padding: 20px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e8e8e8;">
+                <div id="paginationInfo" style="color: #666;">显示第 0-0 条，共 0 条记录</div>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <span style="color: #666;">每页显示：</span>
+                    <select id="pageSizeSelect" onchange="changePageSize()" style="padding: 4px 8px; border: 1px solid #d9d9d9; border-radius: 4px;">
+                        <option value="10">10</option>
+                        <option value="20" selected>20</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                    <button onclick="previousPage()" class="btn btn-primary btn-sm" id="prevBtn">上一页</button>
+                    <span id="pageInfo" style="color: #666; padding: 0 10px;">第 0 页 / 共 0 页</span>
+                    <button onclick="nextPage()" class="btn btn-primary btn-sm" id="nextBtn">下一页</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/common.js"></script>
+    <script src="/js/upload-tasks.js"></script>
+</body>
+</html>
+

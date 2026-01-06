@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>编辑客户 - 客户存储系统</title>
+    <link rel="stylesheet" href="/css/common.css">
+    <style>
+        .form-container {
+            background: #fff;
+            padding: 30px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            max-width: 800px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #40a9ff;
+            box-shadow: 0 0 0 2px rgba(24,144,255,0.2);
+        }
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        .required {
+            color: #ff4d4f;
+        }
+        .form-actions {
+            margin-top: 30px;
+            text-align: center;
+        }
+        .search-group {
+            background: #fafafa;
+            padding: 20px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <div class="top-header">
+        <div class="system-name">客户信息</div>
+        <div class="user-info">
+            <a href="javascript:void(0)">查询前端</a>
+            <span id="userName">登录人:【加载中...】</span>
+            <a href="javascript:void(0)" onclick="logout()">退出</a>
+        </div>
+    </div>
+
+    <!-- 左侧菜单 -->
+    <div class="sidebar">
+        <div class="menu-title">管理菜单</div>
+        <a href="/pages/index.html" class="menu-item">首页</a>
+        <a href="/pages/list.html" class="menu-item">客户列表</a>
+        <a href="/pages/add.html" class="menu-item">添加客户</a>
+        <a href="/pages/edit.html" class="menu-item active">编辑客户</a>
+        <a href="/pages/delete.html" class="menu-item">删除客户</a>
+        <a href="/pages/import.html" class="menu-item">导入数据</a>
+        <a href="/pages/upload-tasks.html" class="menu-item">上传任务管理</a>
+        <a href="/pages/batch-query.html" class="menu-item">批量查询</a>
+    </div>
+
+    <!-- 主内容区域 -->
+    <div class="main-content">
+        <div class="content-header">
+            <h2>编辑客户</h2>
+        </div>
+
+        <div class="form-container">
+            <div id="message" class="message"></div>
+            
+            <div class="search-group">
+                <div class="form-group">
+                    <label for="customerId">客户ID <span class="required">*</span></label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="number" id="customerId" name="customerId" placeholder="请输入要编辑的客户ID" style="flex: 1;">
+                        <button type="button" onclick="loadCustomer()" class="btn btn-primary">加载客户信息</button>
+                    </div>
+                </div>
+            </div>
+            
+            <form id="customerForm" style="display: none;">
+                <input type="hidden" id="id" name="id">
+                
+                <div class="form-group">
+                    <label for="name">姓名 <span class="required">*</span></label>
+                    <input type="text" id="name" name="name" required placeholder="请输入客户姓名">
+                </div>
+                
+                <div class="form-group">
+                    <label for="phone">电话</label>
+                    <input type="tel" id="phone" name="phone" placeholder="请输入联系电话">
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">邮箱</label>
+                    <input type="email" id="email" name="email" placeholder="请输入邮箱地址">
+                </div>
+                
+                <div class="form-group">
+                    <label for="address">地址</label>
+                    <textarea id="address" name="address" placeholder="请输入详细地址"></textarea>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">更新</button>
+                    <a href="/pages/list.html" class="btn">返回列表</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/js/common.js"></script>
+    <script src="/js/edit.js"></script>
+</body>
+</html>

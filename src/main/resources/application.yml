@@ -1,0 +1,105 @@
+spring:
+  application:
+    name: customer-system
+  
+  # MySQL数据库配置（生产环境）
+  datasource:
+    url: jdbc:mysql://localhost:3306/customer_db?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true&useServerPrepStmts=true&cachePrepStmts=true&prepStmtCacheSize=1000&prepStmtCacheSqlLimit=8192&maintainTimeStats=false&useLocalSessionState=true&elideSetAutoCommits=true&alwaysSendSetIsolation=false&enableQueryTimeouts=false&connectionCollation=utf8mb4_unicode_ci&useCompression=true&cacheResultSetMetadata=true&defaultFetchSize=5000&maxAllowedPacket=67108864
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: customer_db
+    password: TFh4a7BpWMifnk7j
+    #username: root
+    #password: 123456
+    hikari:
+      # 连接池配置（8核32G服务器优化，大幅增加数据库连接数以提升批量入库性能）
+      minimum-idle: 30  # 最小空闲连接数（增加以提升批量入库速度）
+      maximum-pool-size: 100  # 最大连接池大小（8核32G可支持更多并发连接，大幅提升数据库吞吐量和批量入库性能）
+      connection-timeout: 30000  # 连接超时30秒
+      idle-timeout: 600000  # 空闲连接超时10分钟
+      max-lifetime: 1800000  # 连接最大生命周期30分钟
+      connection-test-query: SELECT 1  # 连接测试SQL
+      # 性能优化配置
+      leak-detection-threshold: 60000  # 连接泄漏检测（60秒）
+      pool-name: CustomerSystemHikariCP  # 连接池名称
+      # 连接池性能优化
+      validation-timeout: 3000  # 验证超时3秒
+      initialization-fail-timeout: 1  # 初始化失败超时1毫秒（快速失败）
+      register-mbeans: true  # 注册JMX MBean（用于监控）
+  
+  # H2数据库配置（开发测试环境，快速启动）- 已禁用，使用MySQL
+  # datasource:
+  #   url: jdbc:h2:mem:customerdb
+  #   driver-class-name: org.h2.Driver
+  #   username: sa
+  #   password: 
+  
+  h2:
+    console:
+      enabled: false
+      path: /h2-console
+  
+  jpa:
+    hibernate:
+      ddl-auto: update  # 首次运行后建议改为validate或none
+    show-sql: false  # 生产环境建议设为false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        # 批量操作优化（8核32G服务器，大幅增大批次以提升性能）
+        jdbc:
+          batch_size: 10000  # 批次大小10000（8核32G服务器优化，大幅提升导入速度）
+        order_inserts: true
+        order_updates: true
+        jdbc.batch_versioned_data: true  # 批量版本化数据（提升批量操作性能）
+        # 查询优化（增加数据库查询带宽）
+        jdbc.fetch_size: 200  # 结果集获取大小（从50增加到200，提升查询性能）
+        jdbc.use_scrollable_resultset: true  # 使用可滚动结果集
+        # 连接池和性能优化（注释掉，避免事务问题）
+        # connection.provider_disables_autocommit: true  # 禁用自动提交，可能导致事务回滚问题
+        # 二级缓存配置（可选，如需要可以配置）
+        # cache.use_second_level_cache: true
+        # cache.use_query_cache: true
+        # cache.region.factory_class: org.hibernate.cache.ehcache.EhCacheRegionFactory
+
+server:
+  port: 8080
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 1073741824  # 1GB (1024 * 1024 * 1024) - 支持更大文件
+      max-request-size: 1073741824  # 1GB - 支持更大文件
+      file-size-threshold: 52428800  # 50MB - 超过50MB写入磁盘，小于50MB在内存处理（100M带宽优化，减少磁盘IO提升速度）
+      location: ${java.io.tmpdir}  # 使用系统临时目录
+    # 连接超时配置
+    connection-timeout: 3600000  # 1小时 (60 * 60 * 1000) - 支持长时间上传
+    # Tomcat线程池配置（8核32G服务器优化）
+    tomcat:
+      threads:
+        max: 400  # 最大线程数（8核CPU，可支持更多线程）
+        min-spare: 50  # 最小空闲线程（增加以提升响应速度）
+      max-connections: 10000  # 最大连接数
+      accept-count: 2000  # 等待队列长度（增加以处理更多并发请求）
+      max-http-post-size: 1073741824  # 1GB - POST请求最大大小
+    session:
+      timeout: -1  # Session永不超时（取消登录限时）
+      cookie:
+        name: JSESSIONID
+        http-only: true
+        secure: false  # 如果使用HTTPS，建议设为true
+        same-site: lax  # 支持反向代理环境
+        max-age: -1  # Cookie永久有效（取消登录限时）
+        path: /
+
+logging:
+  level:
+    com.kehu.service.FileUploadService: INFO  # 文件上传服务日志
+    com.kehu.service.ExcelImportService: INFO  # Excel导入服务日志（只保留进度更新日志）
+    com.kehu.controller.CustomerController: WARN  # Controller日志，只保留错误和上传文件相关
+    com.kehu.service.CustomerService: WARN  # CustomerService日志，只保留错误
+    com.kehu: WARN  # 其他服务默认WARN级别
+    org.springframework.web: WARN
+    org.hibernate.SQL: WARN  # 关闭SQL日志
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN  # 关闭SQL参数日志
+    org.springframework: WARN  # Spring框架日志
+  

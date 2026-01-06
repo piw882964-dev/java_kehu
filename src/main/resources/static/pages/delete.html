@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>删除客户 - 客户存储系统</title>
+    <link rel="stylesheet" href="/css/common.css">
+    <style>
+        .form-container {
+            background: #fff;
+            padding: 30px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            max-width: 800px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #40a9ff;
+            box-shadow: 0 0 0 2px rgba(24,144,255,0.2);
+        }
+        .required {
+            color: #ff4d4f;
+        }
+        .form-actions {
+            margin-top: 30px;
+            text-align: center;
+        }
+        .customer-info {
+            margin-top: 20px;
+            padding: 20px;
+            background: #fff7e6;
+            border: 1px solid #ffd591;
+            border-radius: 4px;
+            display: none;
+        }
+        .customer-info .warning {
+            color: #ff4d4f;
+            font-weight: bold;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        .customer-info p {
+            margin: 8px 0;
+            color: #333;
+        }
+        .customer-info .info-label {
+            font-weight: 600;
+            color: #666;
+            display: inline-block;
+            min-width: 80px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <div class="top-header">
+        <div class="system-name">客户信息</div>
+        <div class="user-info">
+            <a href="javascript:void(0)">查询前端</a>
+            <span id="userName">登录人:【加载中...】</span>
+            <a href="javascript:void(0)" onclick="logout()">退出</a>
+        </div>
+    </div>
+
+    <!-- 左侧菜单 -->
+    <div class="sidebar">
+        <div class="menu-title">管理菜单</div>
+        <a href="/pages/index.html" class="menu-item">首页</a>
+        <a href="/pages/list.html" class="menu-item">客户列表</a>
+        <a href="/pages/add.html" class="menu-item">添加客户</a>
+        <a href="/pages/edit.html" class="menu-item">编辑客户</a>
+        <a href="/pages/delete.html" class="menu-item active">删除客户</a>
+        <a href="/pages/import.html" class="menu-item">导入数据</a>
+        <a href="/pages/upload-tasks.html" class="menu-item">上传任务管理</a>
+        <a href="/pages/batch-query.html" class="menu-item">批量查询</a>
+    </div>
+
+    <!-- 主内容区域 -->
+    <div class="main-content">
+        <div class="content-header">
+            <h2>删除客户</h2>
+        </div>
+
+        <div class="form-container">
+            <div id="message" class="message"></div>
+            
+            <form id="deleteForm">
+                <div class="form-group">
+                    <label for="customerId">客户ID <span class="required">*</span></label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="number" id="customerId" name="customerId" placeholder="请输入要删除的客户ID" required style="flex: 1;">
+                        <button type="button" onclick="loadCustomer()" class="btn btn-danger">查询客户信息</button>
+                    </div>
+                </div>
+                
+                <div id="customerInfo" class="customer-info">
+                    <p class="warning">⚠️ 确认要删除以下客户吗？此操作不可恢复！</p>
+                    <p><span class="info-label">ID:</span> <span id="infoId"></span></p>
+                    <p><span class="info-label">姓名:</span> <span id="infoName"></span></p>
+                    <p><span class="info-label">电话:</span> <span id="infoPhone"></span></p>
+                    <p><span class="info-label">邮箱:</span> <span id="infoEmail"></span></p>
+                    <p><span class="info-label">地址:</span> <span id="infoAddress"></span></p>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-danger">确认删除</button>
+                    <a href="/pages/list.html" class="btn">返回列表</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/js/common.js"></script>
+    <script src="/js/delete.js"></script>
+</body>
+</html>

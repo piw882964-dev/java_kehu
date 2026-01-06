@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据备份 - 客户存储系统</title>
+    <link rel="stylesheet" href="/css/common.css">
+    <style>
+        .backup-section {
+            background: white;
+            padding: 20px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #1890ff;
+        }
+        .backup-file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border: 1px solid #e8e8e8;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            background: #fafafa;
+        }
+        .backup-file-item:hover {
+            background: #f0f0f0;
+        }
+        .file-name {
+            flex: 1;
+            font-weight: 500;
+            color: #333;
+        }
+        .file-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .upload-area {
+            border: 2px dashed #d9d9d9;
+            border-radius: 4px;
+            padding: 40px;
+            text-align: center;
+            background: #fafafa;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .upload-area:hover {
+            border-color: #1890ff;
+            background: #f0f7ff;
+        }
+        .upload-area.dragover {
+            border-color: #1890ff;
+            background: #e6f7ff;
+        }
+        #fileInput {
+            display: none;
+        }
+        .selected-file {
+            margin-top: 15px;
+            padding: 10px;
+            background: #e6f7ff;
+            border-radius: 4px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <div class="top-header">
+        <div class="system-name">客户信息</div>
+        <div class="user-info">
+            <a href="javascript:void(0)">查询前端</a>
+            <span id="userName">登录人:【加载中...】</span>
+            <a href="javascript:void(0)" onclick="logout()">退出</a>
+        </div>
+    </div>
+
+    <!-- 左侧菜单 -->
+    <div class="sidebar">
+        <div class="menu-title">管理菜单</div>
+        <a href="/pages/index.html" class="menu-item">首页</a>
+        <a href="/pages/list.html" class="menu-item">客户列表</a>
+        <a href="/pages/add.html" class="menu-item">添加客户</a>
+        <a href="/pages/edit.html" class="menu-item">编辑客户</a>
+        <a href="/pages/delete.html" class="menu-item">删除客户</a>
+        <a href="/pages/import.html" class="menu-item">导入数据</a>
+        <a href="/pages/upload-tasks.html" class="menu-item">上传任务管理</a>
+        <a href="/pages/batch-query.html" class="menu-item">批量查询</a>
+    </div>
+
+    <!-- 主内容区域 -->
+    <div class="main-content">
+        <div class="content-header">
+            <h2>数据备份与恢复</h2>
+        </div>
+
+        <div id="message" class="message"></div>
+
+        <!-- 创建备份区域 -->
+        <div class="backup-section">
+            <div class="section-title">创建备份</div>
+            <p style="color: #666; margin-bottom: 15px;">点击下面的按钮创建当前数据库的备份文件，备份文件将保存在服务器上。</p>
+            <button onclick="createBackup()" class="btn btn-primary" id="createBackupBtn">创建备份</button>
+            <div id="backupStatus" style="margin-top: 10px; display: none;"></div>
+        </div>
+
+        <!-- 备份文件列表 -->
+        <div class="backup-section">
+            <div class="section-title">备份文件列表</div>
+            <div style="margin-bottom: 15px;">
+                <button onclick="loadBackupList()" class="btn">刷新列表</button>
+            </div>
+            <div id="loading" class="loading">正在加载备份列表...</div>
+            <div id="backupList" style="display: none;">
+                <div id="backupListContent"></div>
+                <div id="noBackupFiles" style="text-align: center; padding: 40px; color: #999; display: none;">
+                    暂无备份文件
+                </div>
+            </div>
+        </div>
+
+        <!-- 恢复数据库区域 -->
+        <div class="backup-section">
+            <div class="section-title">恢复数据库</div>
+            <p style="color: #ff4d4f; margin-bottom: 15px; font-weight: bold;">
+                ⚠️ 警告：恢复操作会覆盖现有数据，请谨慎操作！建议在恢复前先创建当前数据的备份。
+            </p>
+            <div class="upload-area" onclick="document.getElementById('fileInput').click()" 
+                 ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                <div style="font-size: 48px; color: #1890ff; margin-bottom: 15px;">📁</div>
+                <div style="font-size: 16px; color: #666; margin-bottom: 10px;">
+                    点击选择文件或拖拽文件到此处
+                </div>
+                <div style="font-size: 14px; color: #999;">
+                    支持 .sql 格式的备份文件
+                </div>
+            </div>
+            <input type="file" id="fileInput" accept=".sql" onchange="handleFileSelect(event)">
+            <div class="selected-file" id="selectedFile">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span id="selectedFileName"></span>
+                    <button onclick="clearSelectedFile()" class="btn btn-sm">清除</button>
+                </div>
+            </div>
+            <div style="margin-top: 20px;">
+                <button onclick="restoreDatabase()" class="btn btn-danger" id="restoreBtn" disabled>恢复数据库</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/common.js"></script>
+    <script src="/js/backup.js"></script>
+</body>
+</html>
+
