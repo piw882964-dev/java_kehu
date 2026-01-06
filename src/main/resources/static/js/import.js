@@ -193,12 +193,16 @@ async function importData() {
         isUploadCancelled = false;
         currentUploadXHR = null;
         
+        // 显示上传进度区域
+        console.log('开始上传文件:', selectedFile.name, '大小:', formatFileSize(selectedFile.size));
+        showUploadProgress(selectedFile.name, selectedFile.size);
+        
         // 直接上传文件并处理（一步完成，后台异步处理）
         const formData = new FormData();
         formData.append('file', selectedFile);
         
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', IMPORT_API, true);
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', IMPORT_API, true);
         xhr.withCredentials = true;
         xhr.timeout = 2 * 60 * 60 * 1000; // 2小时超时（支持超大文件上传）
         
@@ -215,21 +219,29 @@ async function importData() {
             if (e.lengthComputable) {
                 const percent = Math.round((e.loaded / e.total) * 100);
                 updateUploadProgress(percent, e.loaded, e.total);
+                // 每10%输出一次日志
+                if (percent % 10 === 0 || percent === 100) {
+                    console.log(`上传进度: ${percent}% (${formatFileSize(e.loaded)} / ${formatFileSize(e.total)})`);
+                }
             }
         };
         
         const uploadPromise = new Promise((resolve, reject) => {
-            xhr.onreadystatechange = function() {
-                if (xhr.readyState === 4) {
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
                     if (xhr.status === 200) {
                         try {
                             const response = JSON.parse(xhr.responseText);
+                            console.log('上传响应:', response);
                             if (response.success) {
+                                console.log('上传成功，任务ID:', response.taskId);
                                 resolve(response);
                             } else {
+                                console.error('上传失败:', response.message);
                                 reject(new Error(response.message || '上传文件失败'));
                             }
                         } catch (e) {
+                            console.error('解析响应失败:', e, '响应内容:', xhr.responseText);
                             reject(new Error('解析响应失败: ' + e.message));
                         }
                     } else if (xhr.status === 0) {
@@ -300,7 +312,12 @@ async function importData() {
         xhr.send(formData);
         
         // 等待上传完成（返回taskId）
+        console.log('等待上传完成...');
         const result = await uploadPromise;
+        console.log('上传完成，收到结果:', result);
+        
+        // 隐藏上传进度，显示处理进度
+        hideUploadProgress();
         
         // 如果是需要检查的状态（524超时但可能已上传），直接开始轮询
         if (result.needCheck) {
@@ -319,8 +336,11 @@ async function importData() {
         
         const taskId = result.taskId;
         if (!taskId) {
+            console.error('服务器未返回任务ID，响应:', result);
             throw new Error('服务器未返回任务ID');
         }
+        
+        console.log('开始处理任务，任务ID:', taskId);
         
         // 更新状态：上传完成，开始后台处理
         if (processingSection) {
@@ -333,6 +353,7 @@ async function importData() {
         currentTaskId = taskId;
         
         // 立即开始轮询任务状态（上传完成后立即开始）
+        console.log('开始轮询任务状态，任务ID:', taskId);
         startTaskPolling(taskId);
         
         // 上传完成后清理
@@ -384,10 +405,10 @@ async function importData() {
             alert('文件处理失败: ' + error.message);
         }
         
-        importBtn.disabled = false;
-        importBtn.textContent = '开始导入';
-        uploadArea.style.opacity = '1';
-        
+            importBtn.disabled = false;
+            importBtn.textContent = '开始导入';
+            uploadArea.style.opacity = '1';
+            
         // 清理状态
         currentUploadXHR = null;
         isUploadCancelled = false;
@@ -731,33 +752,33 @@ function uploadChunk(chunk, chunkIndex, totalChunks, uploadId, fileName, totalSi
             }
             
         if (xhr.readyState === 4) {
-                if (xhr.status === 200) {
-                    try {
-                        const response = JSON.parse(xhr.responseText);
-                        if (response.success) {
+            if (xhr.status === 200) {
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    if (response.success) {
                             resolve(response);
-                        } else {
+                    } else {
                             reject(new Error(response.message || '上传块失败'));
-                        }
-                    } catch (e) {
+                    }
+                } catch (e) {
                         reject(new Error('无法解析服务器响应'));
-                    }
-                } else if (xhr.status === 401) {
+                }
+            } else if (xhr.status === 401) {
                     reject(new Error('登录已过期，请重新登录'));
-                } else if (xhr.status === 403) {
+            } else if (xhr.status === 403) {
                     reject(new Error('权限不足'));
-                } else {
-                    try {
-                        const response = JSON.parse(xhr.responseText);
+            } else {
+                try {
+                    const response = JSON.parse(xhr.responseText);
                         reject(new Error(response.message || '服务器错误'));
-                    } catch (e) {
+                } catch (e) {
                         reject(new Error('服务器错误，状态码 ' + xhr.status));
-                    }
                 }
             }
-        };
-        
-        xhr.onerror = function() {
+        }
+    };
+    
+    xhr.onerror = function() {
             reject(new Error('网络错误'));
         };
         
@@ -1052,9 +1073,9 @@ async function splitAndImportFile(file, maxRowsPerFile) {
         }
         
         // 显示最终结果
-            importBtn.disabled = false;
-            importBtn.textContent = '开始导入';
-            uploadArea.style.opacity = '1';
+        importBtn.disabled = false;
+        importBtn.textContent = '开始导入';
+        uploadArea.style.opacity = '1';
             
         // 清除上传信息
         hideUploadProgress();
@@ -1325,9 +1346,9 @@ function uploadSingleFileForSplit(file, fileIndex, totalFiles) {
         
         xhr.onerror = function() {
             reject(new Error('网络错误'));
-        };
-        
-        xhr.send(formData);
+    };
+    
+    xhr.send(formData);
     });
 }
 
@@ -1807,6 +1828,7 @@ function checkTaskStatus(taskId) {
 function showProcessingTask(task) {
     const processingSection = document.getElementById('processingSection');
     if (!processingSection) {
+        console.warn('处理进度区域不存在');
         return;
     }
     
@@ -1827,6 +1849,8 @@ function showProcessingTask(task) {
     const error = task.errorCount || 0;
     const skip = task.existingCount || 0;
     const processed = added + error + skip;
+    
+    console.log(`处理进度: ${processed}/${total} (${total > 0 ? Math.round((processed / total) * 100) : 0}%) - 成功:${added} 失败:${error} 跳过:${skip}`);
     
     if (taskProgress) {
         if (total > 0) {
@@ -1855,6 +1879,7 @@ function showProcessingTask(task) {
     }
     
     processingSection.classList.add('show');
+    console.log('已显示处理进度区域');
 }
 
 // 上传完成后立即检查一次任务状态（不进行轮询）
@@ -1901,6 +1926,10 @@ function startTaskPolling(taskId) {
     stopTaskPolling();
     
     currentTaskId = taskId;
+    console.log('开始轮询任务状态，任务ID:', taskId);
+    
+    // 立即检查一次（不等待3秒）
+    checkTaskStatusForPolling(taskId);
     
     // 每3秒轮询一次任务状态
     taskPollingInterval = setInterval(function() {
@@ -1921,18 +1950,28 @@ function checkTaskStatusForPolling(taskId) {
                     const response = JSON.parse(xhr.responseText);
                     if (response.success && response.data) {
                         const task = response.data;
+                        console.log('任务状态更新:', {
+                            id: task.id,
+                            status: task.status,
+                            totalCount: task.totalCount,
+                            addedCount: task.addedCount,
+                            errorCount: task.errorCount,
+                            existingCount: task.existingCount
+                        });
                         
                         if (task.status === '处理中') {
                             // 更新显示
                             showProcessingTask(task);
                         } else {
                             // 任务完成，显示最终结果
+                            console.log('任务完成，状态:', task.status);
                             showTaskComplete(task);
                             stopTaskPolling();
                             localStorage.removeItem('currentUploadTaskId');
                             currentTaskId = null;
                         }
                     } else {
+                        console.warn('任务不存在或查询失败:', response);
                         // 任务不存在，停止轮询
                         stopTaskPolling();
                         localStorage.removeItem('currentUploadTaskId');
@@ -1940,14 +1979,16 @@ function checkTaskStatusForPolling(taskId) {
                         hideProcessingTask();
                     }
                 } catch (e) {
-                    console.error('解析任务信息失败:', e);
+                    console.error('解析任务信息失败:', e, '响应:', xhr.responseText);
                 }
+            } else {
+                console.error('查询任务状态失败，状态码:', xhr.status);
             }
         }
     };
     
     xhr.onerror = function() {
-        console.error('查询任务状态失败');
+        console.error('查询任务状态网络错误');
     };
     
     xhr.send();

@@ -656,7 +656,7 @@ public class CustomerController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
-
+    
     /**
      * 导入客户数据（Excel/CSV）
      * @param file 上传的文件
@@ -708,7 +708,7 @@ public class CustomerController {
             
             logger.info("开始接收文件并异步处理: {}, 大小: {} MB", fileName, file.getSize() / (1024.0 * 1024.0));
             
-            // 创建上传任务记录
+            // 创建上传任务记录（使用独立事务，立即提交并释放连接）
             UploadTask uploadTask = new UploadTask();
             uploadTask.setFileName(fileName);
             uploadTask.setStatus("处理中");
@@ -716,10 +716,18 @@ public class CustomerController {
             uploadTask = uploadTaskService.saveTask(uploadTask);
             logger.info("任务记录已保存: taskId={}, fileName={}", uploadTask.getId(), fileName);
             
-            // 异步处理文件（流式导入 + 批量入库）
+            // 获取用户信息（在异步方法调用前获取，避免Session相关的问题）
             User user = (User) session.getAttribute("user");
-            logger.info("准备启动异步处理: taskId={}, user={}", uploadTask.getId(), user != null ? user.getUsername() : "null");
-            importFileAsync(file, uploadTask.getId(), user, getClientIpAddress(request));
+            String clientIp = getClientIpAddress(request);
+            Long taskId = uploadTask.getId(); // 保存taskId，避免在异步方法中再次访问uploadTask
+            
+            // 注意：这里不立即调用异步方法，而是先让HTTP请求返回，确保事务提交
+            // 但为了保持原有逻辑，我们在返回响应前启动异步处理
+            // 实际上，由于使用了@Async，它会在新线程中执行，不会阻塞当前请求
+            
+            // 异步处理文件（流式导入 + 批量入库）
+            logger.info("准备启动异步处理: taskId={}, user={}", taskId, user != null ? user.getUsername() : "null");
+            importFileAsync(file, taskId, user, clientIp);
             
             response.put("success", true);
             response.put("message", "文件上传成功，正在后台处理");
@@ -768,11 +776,11 @@ public class CustomerController {
             // 使用流式导入，避免内存溢出（边解析边批量入库）
             Map<String, Object> importResult;
             try {
-                if (fileName.toLowerCase().endsWith(".csv")) {
+            if (fileName.toLowerCase().endsWith(".csv")) {
                     importResult = excelImportService.parseAndImportCsvFileStream(file, taskId);
-                } else if (fileName.toLowerCase().endsWith(".xls") || fileName.toLowerCase().endsWith(".xlsx")) {
+            } else if (fileName.toLowerCase().endsWith(".xls") || fileName.toLowerCase().endsWith(".xlsx")) {
                     importResult = excelImportService.parseAndImportExcelFileStream(file, taskId);
-                } else {
+            } else {
                     uploadTask.setStatus("失败");
                     uploadTaskService.saveTask(uploadTask);
                     logger.error("不支持的文件格式: {}", fileName);
@@ -872,7 +880,7 @@ public class CustomerController {
         
         // 权限检查：只有ADMIN可以导入
         if (!hasAdminRole(session)) {
-            response.put("success", false);
+                response.put("success", false);
             response.put("message", "权限不足，只有管理员可以导入数据");
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
         }

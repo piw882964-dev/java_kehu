@@ -18,7 +18,7 @@ spring:
       max-lifetime: 1800000  # 连接最大生命周期30分钟
       connection-test-query: SELECT 1  # 连接测试SQL
       # 性能优化配置
-      leak-detection-threshold: 120000  # 连接泄漏检测（120秒，避免文件上传等长时间操作误报）
+      leak-detection-threshold: 600000  # 连接泄漏检测（600秒=10分钟，支持大文件导入等长时间操作）
       pool-name: CustomerSystemHikariCP  # 连接池名称
       # 连接池性能优化
       validation-timeout: 3000  # 验证超时3秒
