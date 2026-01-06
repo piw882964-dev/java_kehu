@@ -55,4 +55,5 @@ heapdump.hprof
 
 # Documentation files (optional, remove if you want to keep)
 *.md
+!README.md
 
