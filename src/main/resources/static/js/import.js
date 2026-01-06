@@ -344,8 +344,46 @@ async function importData() {
             return;
         }
         
-        console.error('文件处理失败:', error);
-        alert('文件处理失败: ' + error.message);
+        // 如果是超时错误，尝试检查是否有正在处理的任务
+        if (error.message.includes('超时') || error.message.includes('timeout')) {
+            console.warn('上传超时，尝试检查是否有正在处理的任务...');
+            
+            // 检查 localStorage 中是否有任务ID
+            const savedTaskId = localStorage.getItem('currentUploadTaskId');
+            if (savedTaskId) {
+                console.log('发现已保存的任务ID，开始轮询任务状态: ' + savedTaskId);
+                startTaskPolling(parseInt(savedTaskId));
+                
+                // 更新状态显示
+                if (processingSection) {
+                    const statusText = document.getElementById('processingStatus');
+                    if (statusText) {
+                        statusText.textContent = '上传可能已完成，正在检查任务状态...';
+                    }
+                }
+                return; // 不显示错误，直接开始轮询
+            }
+            
+            // 如果没有保存的任务ID，尝试查询最新的处理中任务
+            console.log('未找到已保存的任务ID，尝试查询最新任务...');
+            checkProcessingTask().then(hasTask => {
+                if (hasTask) {
+                    console.log('找到正在处理的任务，已开始轮询');
+                } else {
+                    // 确实没有任务，显示超时提示（但不阻止用户重新上传）
+                    console.warn('未找到正在处理的任务');
+                    alert('上传超时，请稍后检查任务状态。如果文件已上传，数据可能正在后台处理中。\n\n您可以：\n1. 前往"上传任务管理"查看任务状态\n2. 重新上传文件');
+                }
+            }).catch(err => {
+                console.error('检查任务状态失败:', err);
+                alert('上传超时，请稍后检查任务状态。如果文件已上传，数据可能正在后台处理中。');
+            });
+        } else {
+            // 其他错误，正常显示
+            console.error('文件处理失败:', error);
+            alert('文件处理失败: ' + error.message);
+        }
+        
         importBtn.disabled = false;
         importBtn.textContent = '开始导入';
         uploadArea.style.opacity = '1';
