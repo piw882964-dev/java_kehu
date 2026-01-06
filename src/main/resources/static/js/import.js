@@ -200,7 +200,7 @@ async function importData() {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', IMPORT_API, true);
         xhr.withCredentials = true;
-        xhr.timeout = 60 * 60 * 1000; // 1小时超时（支持大文件上传）
+        xhr.timeout = 2 * 60 * 60 * 1000; // 2小时超时（支持超大文件上传）
         
         // 保存XHR对象以便取消
         currentUploadXHR = xhr;
@@ -717,7 +717,7 @@ function uploadChunk(chunk, chunkIndex, totalChunks, uploadId, fileName, totalSi
     const xhr = new XMLHttpRequest();
         xhr.open('POST', '/api/customers/import/chunk', true);
         xhr.withCredentials = true;
-        xhr.timeout = 10 * 60 * 1000; // 每个chunk 10分钟超时（大文件需要更长时间）
+        xhr.timeout = 30 * 60 * 1000; // 每个chunk 30分钟超时（超大文件需要更长时间）
         
         // 保存XHR对象以便取消
         currentUploadChunkXHRs.push(xhr);
@@ -782,7 +782,7 @@ function mergeChunksAndProcess(uploadId, fileName) {
         xhr.open('POST', '/api/customers/import/merge', true);
         xhr.setRequestHeader('Content-Type', 'application/json');
         xhr.withCredentials = true;
-        xhr.timeout = 30 * 60 * 1000; // 30分钟超时（处理可能需要很长时间）
+        xhr.timeout = 2 * 60 * 60 * 1000; // 2小时超时（处理超大文件需要更长时间）
         
         // 保存XHR对象以便取消
         currentUploadXHR = xhr;
@@ -1263,8 +1263,8 @@ function uploadSingleFileForSplit(file, fileIndex, totalFiles) {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', IMPORT_API, true);
         
-        // 设置超时时间为30分钟
-        xhr.timeout = 30 * 60 * 1000;
+        // 设置超时时间为2小时（支持超大文件上传）
+        xhr.timeout = 2 * 60 * 60 * 1000;
         xhr.withCredentials = true;
         
         // 上传进度监听
@@ -1374,8 +1374,8 @@ function uploadSingleFile(file, isSplitFile = false, waitForProcessing = true) {
         // 保存XHR对象以便取消
         currentUploadXHR = xhr;
         
-        // 设置超时时间为30分钟
-        xhr.timeout = 30 * 60 * 1000;
+        // 设置超时时间为2小时（支持超大文件上传）
+        xhr.timeout = 2 * 60 * 60 * 1000;
         xhr.withCredentials = true;
         
         // 上传进度监听（优化：减少localStorage写入频率，每5%更新一次）
@@ -2000,7 +2000,7 @@ function uploadFileToServer(file) {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', UPLOAD_FILE_API, true);
         xhr.withCredentials = true;
-        xhr.timeout = 60 * 60 * 1000; // 1小时超时（支持大文件上传）
+        xhr.timeout = 2 * 60 * 60 * 1000; // 2小时超时（支持超大文件上传）
         
         // 保存XHR对象以便取消
         currentUploadXHR = xhr;
@@ -2078,7 +2078,7 @@ function processServerFile(fileId) {
         xhr.open('POST', PROCESS_FILE_API, true);
         xhr.setRequestHeader('Content-Type', 'application/json');
         xhr.withCredentials = true;
-        xhr.timeout = 30000; // 30秒超时（只是启动处理，应该很快）
+        xhr.timeout = 5 * 60 * 1000; // 5分钟超时（启动处理可能也需要一些时间）
         
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4) {
