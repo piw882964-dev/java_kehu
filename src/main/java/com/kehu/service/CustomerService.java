@@ -356,7 +356,9 @@ public class CustomerService {
                     List<String> foundPhones = customerRepository.findPhonesByPhoneIn(phoneBatch);
                     existingPhones.addAll(foundPhones);
                 }
+                logger.debug("批量查询重复电话: 检查{}个，找到{}个重复", phoneList.size(), existingPhones.size());
             } catch (Exception e) {
+                logger.warn("批量查询重复电话失败，将跳过重复检查", e);
                 // 如果批量查询失败，existingPhones保持为空，后续会跳过重复检查
             }
         }
@@ -375,11 +377,13 @@ public class CustomerService {
                 }
                 
                 // 检查电话是否重复（使用内存中的Set，避免数据库查询）
+                // 重复验证规则：如果电话已存在，则跳过该条记录（避免重复导入）
                 String phone = customer.getPhone() != null ? customer.getPhone().trim() : null;
                 if (phone != null && !phone.isEmpty()) {
                     if (existingPhones.contains(phone)) {
                         skipCount++;
-                        continue; // 流式导入时，不记录错误信息，避免内存溢出
+                        logger.debug("跳过重复数据: 电话={}, 姓名={}", phone, customer.getName());
+                        continue; // 跳过重复数据，不记录错误信息，避免内存溢出
                     }
                     // 将当前批次中的电话也加入Set，避免同批次内重复
                     existingPhones.add(phone);
@@ -430,6 +434,15 @@ public class CustomerService {
         result.put("errorCount", errors.size());
         result.put("errors", errors);
         result.put("duration", duration); // 添加耗时信息
+        
+        // 记录导入统计日志
+        if (skipCount > 0) {
+            logger.info("批量导入完成: 成功={}, 跳过={}（重复数据）, 错误={}, 耗时={}ms", 
+                successCount, skipCount, errors.size(), duration);
+        } else {
+            logger.debug("批量导入完成: 成功={}, 跳过={}, 错误={}, 耗时={}ms", 
+                successCount, skipCount, errors.size(), duration);
+        }
         
         return result;
     }

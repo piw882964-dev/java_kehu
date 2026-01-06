@@ -92,6 +92,8 @@ public class ExcelImportService {
             // 读取完成后，获取最终统计
             int finalProcessed = listener.getProcessedCount();
             int finalTotal = listener.getTotalCount();
+            int finalSkipCount = listener.getSkipCount();
+            int finalErrorCount = listener.getErrorCount();
             
             // 最终进度更新（只在完成时更新一次）
             if (finalProcessed > 0) {
@@ -103,11 +105,12 @@ public class ExcelImportService {
             Map<String, Object> result = new HashMap<>();
             result.put("totalCount", finalTotal);
             result.put("successCount", finalProcessed);
-            result.put("skipCount", 0);
-            result.put("errorCount", 0);
+            result.put("skipCount", finalSkipCount);  // 返回实际跳过的数量（重复数据）
+            result.put("errorCount", finalErrorCount);  // 返回实际错误数量
             result.put("errors", new ArrayList<>());
             
-            logger.info("EasyExcel导入完成: 总记录数={}, 成功={}", finalTotal, finalProcessed);
+            logger.info("EasyExcel导入完成: 总记录数={}, 成功={}, 跳过={}（重复数据）, 错误={}", 
+                finalTotal, finalProcessed, finalSkipCount, finalErrorCount);
             
             return result;
         }
@@ -125,6 +128,8 @@ public class ExcelImportService {
         
         int totalCount = 0;
         int processedCount = 0;
+        int skipCount = 0;
+        int errorCount = 0;
         int batchSize = 10000;  // 增大批次大小到10000条（8核32G服务器优化）
         List<Customer> batch = new ArrayList<>();
         
@@ -164,8 +169,11 @@ public class ExcelImportService {
                         
                         // 达到批次大小，立即保存
                         if (batch.size() >= batchSize) {
-                            customerService.batchImportCustomers(batch, uploadTaskId);
-                            processedCount += batch.size();
+                            Map<String, Object> batchResult = customerService.batchImportCustomers(batch, uploadTaskId);
+                            // 累加实际的统计结果
+                            processedCount += (Integer) batchResult.getOrDefault("successCount", 0);
+                            skipCount += (Integer) batchResult.getOrDefault("skipCount", 0);
+                            errorCount += (Integer) batchResult.getOrDefault("errorCount", 0);
                             batch.clear();
                         }
                     }
@@ -174,8 +182,11 @@ public class ExcelImportService {
             
             // 处理剩余的批次
             if (!batch.isEmpty()) {
-                customerService.batchImportCustomers(batch, uploadTaskId);
-                processedCount += batch.size();
+                Map<String, Object> batchResult = customerService.batchImportCustomers(batch, uploadTaskId);
+                // 累加实际的统计结果
+                processedCount += (Integer) batchResult.getOrDefault("successCount", 0);
+                skipCount += (Integer) batchResult.getOrDefault("skipCount", 0);
+                errorCount += (Integer) batchResult.getOrDefault("errorCount", 0);
                 batch.clear();
             }
         }
@@ -190,9 +201,12 @@ public class ExcelImportService {
         Map<String, Object> result = new HashMap<>();
         result.put("totalCount", totalCount);
         result.put("successCount", processedCount);
-        result.put("skipCount", 0);
-        result.put("errorCount", 0);
+        result.put("skipCount", skipCount);  // 返回实际跳过的数量（重复数据）
+        result.put("errorCount", errorCount);  // 返回实际错误数量
         result.put("errors", new ArrayList<>());
+        
+        logger.info("CSV导入完成: 总记录数={}, 成功={}, 跳过={}（重复数据）, 错误={}", 
+            totalCount, processedCount, skipCount, errorCount);
         
         return result;
     }

@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 /**
@@ -27,7 +28,9 @@ public class CustomerExcelReadListener implements ReadListener<CustomerExcelDTO>
     
     private List<Customer> batch = new ArrayList<>();  // 当前批次
     private int totalCount = 0;  // 总记录数
-    private int processedCount = 0;  // 已处理数量
+    private int processedCount = 0;  // 已处理数量（成功入库的数量）
+    private int skipCount = 0;  // 跳过的数量（重复数据）
+    private int errorCount = 0;  // 错误数量
     
     // 进度信息类
     public static class ProgressInfo {
@@ -100,9 +103,23 @@ public class CustomerExcelReadListener implements ReadListener<CustomerExcelDTO>
         }
         
         try {
-            // 批量入库
-            customerService.batchImportCustomers(batch, uploadTaskId);
-            processedCount += batch.size();
+            // 批量入库（会返回成功、跳过、错误的数量）
+            Map<String, Object> result = customerService.batchImportCustomers(batch, uploadTaskId);
+            
+            // 更新统计数据（使用实际返回的数量，而不是批次大小）
+            Integer success = (Integer) result.get("successCount");
+            Integer skip = (Integer) result.get("skipCount");
+            Integer error = (Integer) result.get("errorCount");
+            
+            if (success != null) {
+                processedCount += success;
+            }
+            if (skip != null) {
+                skipCount += skip;
+            }
+            if (error != null) {
+                errorCount += error;
+            }
             
             // 清空批次，释放内存
             batch.clear();
@@ -110,7 +127,8 @@ public class CustomerExcelReadListener implements ReadListener<CustomerExcelDTO>
             // 注意：不在批量入库时调用进度回调，只在最终完成时更新进度
         } catch (Exception e) {
             logger.error("批量入库失败", e);
-            // 清空批次，继续处理下一批
+            // 记录错误，继续处理下一批
+            errorCount += batch.size();
             batch.clear();
         }
     }
@@ -123,10 +141,24 @@ public class CustomerExcelReadListener implements ReadListener<CustomerExcelDTO>
     }
     
     /**
-     * 获取已处理数量
+     * 获取已处理数量（成功入库的数量）
      */
     public int getProcessedCount() {
         return processedCount;
+    }
+    
+    /**
+     * 获取跳过的数量（重复数据）
+     */
+    public int getSkipCount() {
+        return skipCount;
+    }
+    
+    /**
+     * 获取错误数量
+     */
+    public int getErrorCount() {
+        return errorCount;
     }
 }
 
